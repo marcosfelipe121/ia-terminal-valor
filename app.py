@@ -10,6 +10,7 @@ st.markdown("""
     <style>
     .main { background-color: #f8f9fa; }
     .stMetric { background-color: #ffffff; border-radius: 10px; padding: 15px; border: 1px solid #d1d5db; box-shadow: 2px 2px 5px rgba(0,0,0,0.05); }
+    .status-box { padding: 20px; border-radius: 10px; margin-top: 10px; }
     h1, h2, h3 { color: #0d47a1; font-family: 'Arial', sans-serif; }
     </style>
     """, unsafe_allow_html=True)
@@ -18,7 +19,6 @@ st.markdown("""
 def load_data(url):
     try:
         df = pd.read_csv(url, on_bad_lines='skip')
-        # Converte e remove a hora
         df['Date'] = pd.to_datetime(df['Date'], dayfirst=True, errors='coerce').dt.date
         return df.dropna(subset=['HomeTeam', 'AwayTeam', 'FTHG', 'FTAG'])
     except: return None
@@ -78,44 +78,59 @@ if df is not None and not df.empty:
 
     # --- MÉTRICAS ---
     st.write("---")
+    st.subheader("🎯 Probabilidades IA")
     res1, res2, res3, res4 = st.columns(4)
     res1.metric(f"Vitória {t_casa}", f"{p_c:.1%}")
     res2.metric("Empate", f"{p_e:.1%}")
     res3.metric(f"Vitória {t_fora}", f"{p_f:.1%}")
     res4.metric("Ambas Marcam", f"{prob_btts:.1%}")
 
-    # --- VALOR ---
+    # --- ANÁLISE DE VALOR DIDÁTICA ---
     st.write("---")
-    st.subheader("💰 Análise de Valor (EV+)")
-    v1, v2, v3 = st.columns(3)
-    with v1:
-        odd_g = st.number_input(f"Odd Over {linha_g}", value=1.40)
-        ev_g = (prob_g_linha * odd_g) - 1
-        st.write(f"Prob. Over {linha_g}: **{prob_g_linha:.1%}**")
-        if ev_g > 0: st.success("💎 VALOR ENCONTRADO")
-        else: st.error("Sem Valor")
-    with v2:
-        odd_btts = st.number_input(f"Odd BTTS (Sim)", value=1.80)
-        ev_b = (prob_btts * odd_btts) - 1
-        if ev_b > 0: st.success("💎 VALOR ENCONTRADO")
-        else: st.error("Sem Valor")
-    with v3:
-        proj_c = (m_casa * 3.5) + (m_fora * 3.0)
-        st.metric("⛳ Cantos Projetados", f"{proj_c:.1f}")
-        st.caption(f"Prob. Over {linha_c}: **{(proj_c / (linha_c + 4.5)):.1%}**")
+    st.subheader("💰 Onde investir? (Análise de Valor)")
+    
+    col_v1, col_v2 = st.columns(2)
 
-    # --- HISTÓRICO AJUSTADO ---
+    # Análise de Gols
+    with col_v1:
+        st.markdown(f"#### Mercado: Over {linha_g} Gols")
+        odd_g = st.number_input(f"Odd da Casa p/ Over {linha_g}", value=1.40, key="odd_gols")
+        odd_justa_g = 1 / prob_g_linha if prob_g_linha > 0 else 0
+        ev_g = (prob_g_linha * odd_g) - 1
+        
+        st.write(f"📈 **Probabilidade IA:** {prob_g_linha:.1%}")
+        st.write(f"⚖️ **Odd Mínima Sugerida:** {odd_justa_g:.2f}")
+        
+        if ev_g > 0.10:
+            st.success(f"💎 **VALOR ENCONTRADO!**\nA casa está pagando muito bem. Valor esperado: +{ev_g:.1%}")
+        elif ev_g > 0:
+            st.warning(f"⚠️ **VALOR JUSTO.**\nAposta aceitável, mas com margem apertada (+{ev_g:.1%})")
+        else:
+            st.error(f"❌ **SEM VALOR.**\nA odd está muito baixa para o risco calculado. Não entre.")
+
+    # Análise de Ambas Marcam
+    with col_v2:
+        st.markdown("#### Mercado: Ambas Marcam")
+        odd_btts = st.number_input("Odd da Casa p/ BTTS (Sim)", value=1.80, key="odd_btts")
+        odd_justa_b = 1 / prob_btts if prob_btts > 0 else 0
+        ev_b = (prob_btts * odd_btts) - 1
+        
+        st.write(f"📈 **Probabilidade IA:** {prob_btts:.1%}")
+        st.write(f"⚖️ **Odd Mínima Sugerida:** {odd_justa_b:.2f}")
+        
+        if ev_b > 0.10:
+            st.success(f"💎 **VALOR ENCONTRADO!**\nExcelente oportunidade para BTTS. Valor: +{ev_b:.1%}")
+        elif ev_b > 0:
+            st.warning(f"⚠️ **VALOR JUSTO.**\nMargem de lucro pequena (+{ev_b:.1%})")
+        else:
+            st.error(f"❌ **SEM VALOR.**\nRisco maior que o prêmio oferecido.")
+
+    # --- HISTÓRICO ---
     st.write("---")
     st.subheader("📋 Registro de Jogos (Base de Dados)")
-    
-    # Preparação da tabela
     hist_total = pd.concat([hist_casa, hist_fora]).drop_duplicates().sort_values(by='Date', ascending=False)
-    
-    # Renomeando colunas para o usuário
     hist_view = hist_total[['Date', 'HomeTeam', 'AwayTeam', 'FTHG', 'FTAG']].copy()
     hist_view.columns = ['Data', 'Mandante', 'Visitante', 'Gols Casa', 'Gols Fora']
-    
-    # Exibição
     st.dataframe(hist_view, use_container_width=True, hide_index=True)
 
 else:
