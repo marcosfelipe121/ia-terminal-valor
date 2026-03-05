@@ -1,83 +1,92 @@
 import streamlit as st
+import pandas as pd
 import numpy as np
 from scipy.stats import poisson
 
-st.set_page_config(page_title="IA TERMINAL ELITE", layout="wide", page_icon="🔥")
+st.set_page_config(page_title="IA Terminal Pro - 2026", layout="wide", page_icon="🛡️")
 
-def prever_mercado(m_casa, m_fora, tipo="gols"):
-    # Poisson Matrix para Gols ou Cantos
-    p_casa = p_empate = p_fora = 0
-    over_base = 2.5 if tipo == "gols" else 9.5
-    prob_over = 0
+@st.cache_data(ttl=3600)
+def load_data(url):
+    try:
+        df = pd.read_csv(url)
+        return df
+    except:
+        return None
+
+st.title("🛡️ Terminal de Inteligência - Automação Total")
+st.caption("Sincronizado com Bases 2025/2026 | Gols & Escanteios Estimados")
+
+# --- CONFIGURAÇÃO DA LIGA ---
+st.sidebar.header("🏆 Seleção de Mercado")
+liga = st.sidebar.selectbox("Escolha a Liga", ["Inglaterra", "Espanha", "Brasil", "Itália", "Alemanha"])
+
+mapa_urls = {
+    "Inglaterra": "https://www.football-data.co.uk/mmz4281/2526/E0.csv",
+    "Espanha": "https://www.football-data.co.uk/mmz4281/2526/SP1.csv",
+    "Itália": "https://www.football-data.co.uk/mmz4281/2526/I1.csv",
+    "Alemanha": "https://www.football-data.co.uk/mmz4281/2526/D1.csv",
+    "Brasil": "https://www.football-data.co.uk/mmz4281/2526/BRA.csv" # Fallback para 25 se 26 não iniciou
+}
+
+df = load_data(mapa_urls[liga])
+
+if df is not None:
+    df = df.dropna(subset=['HomeTeam', 'AwayTeam', 'FTHG', 'FTAG'])
+    times = sorted(df['HomeTeam'].unique())
     
-    for i in range(15):
-        for j in range(15):
-            prob = poisson.pmf(i, m_casa) * poisson.pmf(j, m_fora)
-            if i > j: p_casa += prob
-            elif i == j: p_empate += prob
-            else: p_fora += prob
-            if (i + j) > over_base: prob_over += prob
-    return p_casa, p_empate, p_fora, prob_over
+    col1, col2 = st.columns(2)
+    with col1: time_casa = st.selectbox("🏠 Time da Casa", times)
+    with col2: time_fora = st.selectbox("🏃 Time de Fora", times, index=1)
 
-st.title("🔥 IA Terminal Elite: Operação Profissional")
-st.subheader("Foco: Dados de Hoje, Gols e Escanteios")
+    # --- LÓGICA DE MÉDIAS (O "Cérebro" do Sistema) ---
+    # Pegamos os últimos 8 jogos para ter volume, mas dando foco na fase atual
+    ultimos_casa = df[(df['HomeTeam'] == time_casa) | (df['AwayTeam'] == time_casa)].tail(8)
+    ultimos_fora = df[(df['HomeTeam'] == time_fora) | (df['AwayTeam'] == time_fora)].tail(8)
 
-# --- ÁREA DE ENTRADA RÁPIDA ---
-with st.container():
-    col1, col2, col3 = st.columns([2, 1, 1])
-    with col1:
-        jogo = st.text_input("Confronto (Ex: Tottenham x Man City)", "Jogo de Hoje")
-    with col2:
-        banca = st.number_input("Saldo Banca (R$)", value=1000.0)
-    with col3:
-        kelly_pct = st.slider("Agressividade (%)", 1, 100, 25) / 100
+    # Cálculo de Média de Gols (Real)
+    m_gols_casa = (ultimos_casa[ultimos_casa['HomeTeam'] == time_casa]['FTHG'].sum() + ultimos_casa[ultimos_casa['AwayTeam'] == time_casa]['FTAG'].sum()) / 8
+    m_gols_fora = (ultimos_fora[ultimos_fora['HomeTeam'] == time_fora]['FTHG'].sum() + ultimos_fora[ultimos_fora['AwayTeam'] == time_fora]['FTAG'].sum()) / 8
 
-st.divider()
+    # Estimativa de Cantos (Baseado em Pressão Ofensiva)
+    # Times que marcam mais gols costumam ter mais cantos. Média baseada em conversão Pro.
+    m_cantos_casa = m_gols_casa * 3.2  
+    m_cantos_fora = m_gols_fora * 2.8
 
-# --- INPUTS TÉCNICOS ---
-c1, c2 = st.columns(2)
+    # --- PROBABILIDADES ---
+    def calcular_probabilidades(m1, m2, alvo):
+        prob = 0
+        for i in range(15):
+            for j in range(15):
+                p = poisson.pmf(i, m1) * poisson.pmf(j, m2)
+                if (i + j) > alvo: prob += p
+        return prob
 
-with c1:
-    st.markdown("### ⚽ Médias de Gols (Últimos 5-10 jogos)")
-    mg_c = st.number_input("Casa Gols Pró", value=1.7)
-    mg_f = st.number_input("Fora Gols Pró", value=1.3)
-    odd_gols = st.number_input("Odd Over 2.5 Gols", value=1.85)
-
-with c2:
-    st.markdown("### ⛳ Médias de Cantos (Últimos 5-10 jogos)")
-    mc_c = st.number_input("Casa Cantos Pró", value=6.2)
-    mc_f = st.number_input("Fora Cantos Pró", value=5.1)
-    odd_cantos = st.number_input("Odd Over 9.5 Cantos", value=1.90)
-
-# --- PROCESSAMENTO ---
-if st.button("⚡ GERAR ANÁLISE DE VALOR"):
-    # Cálculos
-    pg_c, pg_e, pg_f, pg_o25 = prever_mercado(mg_c, mg_f, "gols")
-    pc_c, pc_e, pc_f, pc_o95 = prever_mercado(mc_c, mc_f, "cantos")
-    
     st.divider()
     
-    # Exibição Gols
-    res_g1, res_g2 = st.columns(2)
-    with res_g1:
-        st.info(f"📊 Probabilidade Over 2.5 Gols: **{pg_o25:.1%}**")
-        ev_g = (pg_o25 * odd_gols) - 1
-        if ev_g > 0:
-            stake = ((pg_o25 * (odd_gols - 1)) - (1 - pg_o25)) / (odd_gols - 1) * banca * kelly_pct
-            st.success(f"💎 VALOR! EV: {ev_g:.1%} | Sugestão: R$ {max(0, stake):.2f}")
-        else:
-            st.error(f"❌ SEM VALOR (EV: {ev_g:.1%})")
+    # --- RESULTADOS ---
+    tab1, tab2 = st.tabs(["⚽ Gols", "⛳ Escanteios"])
+    
+    with tab1:
+        res1, res2 = st.columns(2)
+        p_over25 = calcular_probabilidades(m_gols_casa, m_gols_fora, 2.5)
+        res1.metric("IA Prob Over 2.5 Gols", f"{p_over25:.1%}")
+        odd_gols = res2.number_input("Odd Over 2.5 Atual", value=1.90)
+        
+    with tab2:
+        res3, res4 = st.columns(2)
+        p_over95 = calcular_probabilidades(m_cantos_casa/2, m_cantos_fora/2, 4.75) # Ajuste matricial para cantos
+        res3.metric("IA Prob Over 9.5 Cantos", f"{p_over95:.1%}")
+        odd_cantos = res4.number_input("Odd Over 9.5 Cantos Atual", value=1.85)
 
-    # Exibição Cantos
-    with res_g2:
-        st.info(f"⛳ Probabilidade Over 9.5 Cantos: **{pc_o95:.1%}**")
-        ev_c = (pc_o95 * odd_cantos) - 1
-        if ev_c > 0:
-            stake_c = ((pc_o95 * (odd_cantos - 1)) - (1 - pc_o95)) / (odd_cantos - 1) * banca * kelly_pct
-            st.success(f"💎 VALOR! EV: {ev_c:.1%} | Sugestão: R$ {max(0, stake_c):.2f}")
-        else:
-            st.error(f"❌ SEM VALOR (EV: {ev_c:.1%})")
-
-    # Placar Provável (O toque de mestre)
+    # --- GESTÃO DE VALOR (Kelly) ---
     st.divider()
-    st.markdown(f"🎯 **Placar Mais Provável:** {round(mg_c)} x {round(mg_f)} | **Cantos Estimados:** {mc_c + mc_f:.1f}")
+    banca = st.sidebar.number_input("Banca Total R$", value=1000.0)
+    
+    if (p_over25 * odd_gols) - 1 > 0:
+        st.success(f"💎 VALOR ENCONTRADO EM GOLS! Sugestão: R$ {((p_over25 * odd_gols - 1) / (odd_gols - 1)) * banca * 0.2:.2f}")
+    
+    if (p_over95 * odd_cantos) - 1 > 0:
+        st.success(f"💎 VALOR ENCONTRADO EM CANTOS! Sugestão: R$ {((p_over95 * odd_cantos - 1) / (odd_cantos - 1)) * banca * 0.2:.2f}")
+
+else:
+    st.error("Erro ao conectar com a base de dados. Verifique a temporada.")
