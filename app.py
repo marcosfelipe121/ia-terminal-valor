@@ -20,11 +20,11 @@ st.markdown("""
 def load_data(url):
     try:
         df = pd.read_csv(url)
-        df['Date'] = pd.to_datetime(df['Date'], dayfirst=True)
+        # Tenta converter a data de forma segura
+        df['Date'] = pd.to_datetime(df['Date'], dayfirst=True, errors='coerce')
         return df.dropna(subset=['HomeTeam', 'AwayTeam', 'FTHG', 'FTAG'])
     except: return None
 
-# --- ENGINE ---
 def get_stats(df, time):
     # Puxa os últimos 8 jogos do time (como mandante ou visitante)
     recent = df[(df['HomeTeam'] == time) | (df['AwayTeam'] == time)].tail(8)
@@ -32,11 +32,11 @@ def get_stats(df, time):
     for _, row in recent.iterrows():
         if row['HomeTeam'] == time: gols_pro += row['FTHG']
         else: gols_pro += row['FTAG']
-    return gols_pro / 8, recent
+    return (gols_pro / 8 if len(recent) > 0 else 0), recent
 
 # --- INTERFACE ---
 st.title("🛡️ Terminal IA Elite Predictor")
-st.caption(f"Status do Servidor: Conectado | Dados: Temporada 2025/2026")
+st.caption(f"Status: Sincronizado com Bases de Dados Reais 2025/2026")
 
 liga = st.sidebar.selectbox("🏆 Selecione a Liga", ["Premier League (ING)", "La Liga (ESP)", "Serie A (ITA)", "Série A (BRA)"])
 url_map = {
@@ -60,47 +60,8 @@ if df is not None:
     
     # Probabilidades Poisson
     p_c = p_e = p_f = o25 = 0
-    for i in range(10):
-        for j in range(10):
+    for i in range(12):
+        for j in range(12):
             prob = poisson.pmf(i, m_casa) * poisson.pmf(j, m_fora)
             if i > j: p_c += prob
             elif i == j: p_e += prob
-            else: p_f += prob
-            if (i+j) > 2.5: o25 += prob
-
-    # --- DASHBOARD ---
-    st.write("---")
-    st.subheader("🎯 Probabilidades e Projeções")
-    d1, d2, d3, d4 = st.columns(4)
-    d1.metric(f"Vitória {t_casa}", f"{p_c:.1%}")
-    d2.metric("Empate", f"{p_e:.1%}")
-    d3.metric(f"Vitória {t_fora}", f"{p_f:.1%}")
-    d4.metric("Over 2.5 Gols", f"{o25:.1%}")
-
-    # --- VALOR ESPERADO (ENTRADA DE ODDS) ---
-    st.write("---")
-    st.subheader("💰 Análise de Valor (EV+)")
-    v1, v2 = st.columns(2)
-    
-    with v1:
-        odd_c = st.number_input(f"Odd para Vitória do {t_casa}", value=2.0)
-        ev_c = (p_c * odd_c) - 1
-        if ev_c > 0: st.success(f"💎 VALOR EM {t_casa.upper()}: +{ev_c:.1%}")
-        else: st.error(f"Sem Valor para {t_casa}")
-
-    with v2:
-        odd_o = st.number_input(f"Odd para Over 2.5 Gols", value=1.90)
-        ev_o = (o25 * odd_o) - 1
-        if ev_o > 0: st.success(f"💎 VALOR EM OVER 2.5: +{ev_o:.1%}")
-        else: st.error("Sem Valor para Over 2.5")
-
-    # --- MAPA DE CALOR E REGISTRO ---
-    st.write("---")
-    col_map, col_data = st.columns([1, 2])
-    
-    with col_map:
-        st.subheader("⏱️ Tendência Temporal")
-        st.write("Chance de Gols no 1º Tempo")
-        st.progress(int((o25 * 0.4) * 100))
-        st.write("Chance de Gols no 2º Tempo")
-        st.progress(int((o25 * 0.6) * 1
