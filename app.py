@@ -3,17 +3,15 @@ import pandas as pd
 import numpy as np
 from scipy.stats import poisson
 
-# Configuração de Layout Profissional
 st.set_page_config(page_title="IA ELITE PREDICTOR 2026", layout="wide", page_icon="⚽")
 
-# Estilo CSS Personalizado
+# Design Profissional
 st.markdown("""
     <style>
     .main { background-color: #f0f2f6; }
-    .stMetric { background-color: #ffffff; border-radius: 10px; padding: 15px; border: 1px solid #d1d5db; box-shadow: 2px 2px 5px rgba(0,0,0,0.05); }
-    h1, h2, h3 { color: #1e3a8a; font-family: 'Segoe UI', sans-serif; }
-    .lucro-texto { color: #28a745; font-weight: bold; font-size: 1.2em; }
-    .scout-card { background-color: #e3f2fd; padding: 15px; border-radius: 10px; border-left: 5px solid #2196f3; }
+    .stMetric { background-color: #ffffff; border-radius: 10px; padding: 15px; border: 1px solid #d1d5db; }
+    .explainer { background-color: #ffffff; padding: 10px; border-radius: 5px; border-left: 5px solid #1e3a8a; font-size: 0.9em; margin-bottom: 10px; }
+    .player-card { background-color: #fff3e0; padding: 15px; border-radius: 10px; border: 1px solid #ffb74d; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -28,22 +26,16 @@ def load_data(url):
 def get_stats(df, time):
     recent = df[(df['HomeTeam'] == time) | (df['AwayTeam'] == time)].tail(8)
     gols_pro = 0
-    gols_contra = 0
+    gols_con = 0
     for _, row in recent.iterrows():
         if row['HomeTeam'] == time:
-            gols_pro += row['FTHG']
-            gols_contra += row['FTAG']
+            gols_pro += row['FTHG']; gols_con += row['FTAG']
         else:
-            gols_pro += row['FTAG']
-            gols_contra += row['FTHG']
-    return (gols_pro / 8), (gols_contra / 8), recent
+            gols_pro += row['FTAG']; gols_con += row['FTHG']
+    return (gols_pro / 8), (gols_con / 8), recent
 
 # --- INTERFACE ---
-st.title("🛡️ Terminal IA Elite: Scout & Operacional 2026")
-
-if st.sidebar.button("♻️ Forçar Atualização"):
-    st.cache_data.clear()
-    st.rerun()
+st.title("🛡️ Terminal IA Elite: Scout Detalhado v14")
 
 liga = st.sidebar.selectbox("🏆 Liga", ["Premier League (ING)", "La Liga (ESP)", "Serie A (ITA)", "Série A (BRA)"])
 url_map = {
@@ -57,60 +49,67 @@ df = load_data(url_map[liga])
 
 if df is not None and not df.empty:
     times = sorted(df['HomeTeam'].unique())
-    c1, c2 = st.columns(2)
-    with c1: t_casa = st.selectbox("🏠 Mandante", times)
-    with c2: t_fora = st.selectbox("🏃 Visitante", times, index=min(1, len(times)-1))
+    col1, col2 = st.columns(2)
+    with col1: t_casa = st.selectbox("🏠 Mandante", times)
+    with col2: t_fora = st.selectbox("🏃 Visitante", times, index=min(1, len(times)-1))
 
-    m_casa_pro, m_casa_con, hist_casa = get_stats(df, t_casa)
-    m_fora_pro, m_fora_con, hist_fora = get_stats(df, t_fora)
+    m_c_pro, m_c_con, hist_casa = get_stats(df, t_casa)
+    m_f_pro, m_f_con, hist_fora = get_stats(df, t_fora)
 
-    # --- POISSON ---
-    p_c = p_e = p_f = o15 = btts = 0
-    for i in range(12):
-        for j in range(12):
-            prob = poisson.pmf(i, m_casa_pro) * poisson.pmf(j, m_fora_pro)
-            if i > j: p_c += prob
-            elif i == j: p_e += prob
-            else: p_f += prob
-            if (i+j) > 1.5: o15 += prob
-            if i > 0 and j > 0: btts += prob
-
+    # --- MÉTRICAS GERAIS ---
     st.write("---")
-    st.subheader("🎯 Probabilidades IA")
-    d1, d2, d3, d4 = st.columns(4)
-    d1.metric(f"Vitória {t_casa}", f"{p_c:.1%}")
-    d2.metric("Empate", f"{p_e:.1%}")
-    d3.metric(f"Vitória {t_fora}", f"{p_f:.1%}")
-    d4.metric("Ambas Marcam", f"{btts:.1%}")
-
-    # --- NOVO: ESTIMATIVA DE SCOUT (INTENSIDADE) ---
-    st.write("---")
-    st.subheader("🕵️ Projeção de Scout & Intensidade (Estimativa)")
-    s1, s2 = st.columns(2)
+    o15 = 0
+    for i in range(10):
+        for j in range(10):
+            if (i+j) > 1.5: o15 += poisson.pmf(i, m_c_pro) * poisson.pmf(j, m_f_pro)
     
-    with s1:
-        st.markdown(f"<div class='scout-card'><b>Intensidade Defensiva: {t_casa}</b><br>"
-                    f"Faltas Cometidas Est.: {(m_casa_con * 8.5):.1f}<br>"
-                    f"Roubadas de Bola Est.: {(m_fora_pro * 12.2):.1f}</div>", unsafe_allow_html=True)
-    with s2:
-        st.markdown(f"<div class='scout-card'><b>Intensidade Defensiva: {t_fora}</b><br>"
-                    f"Faltas Cometidas Est.: {(m_fora_con * 9.1):.1f}<br>"
-                    f"Roubadas de Bola Est.: {(m_casa_pro * 11.8):.1f}</div>", unsafe_allow_html=True)
-    st.caption("Nota: Valores baseados no volume de ataque sofrido e gols concedidos nas últimas 8 partidas.")
+    st.subheader("📊 Explicação da Estimativa de Scout")
+    st.markdown(f"""
+    <div class='explainer'>
+    <b>Como calculamos:</b><br>
+    • <b>Faltas:</b> Baseado na média de gols sofridos (Exposição defensiva).<br>
+    • <b>Roubadas:</b> Baseado no volume de gols do adversário (Necessidade de desarme).
+    </div>
+    """, unsafe_allow_html=True)
 
-    # --- GESTÃO DE BANCA ---
+    s1, s2 = st.columns(2)
+    with s1:
+        st.metric(f"Faltas Est. {t_casa}", f"{m_c_con * 8.8:.1f}", help="Cálculo: Média Gols Sofridos x 8.8")
+        st.metric(f"Desarmes Est. {t_casa}", f"{m_f_pro * 11.5:.1f}", help="Cálculo: Média Gols Pró Adversário x 11.5")
+    with s2:
+        st.metric(f"Faltas Est. {t_fora}", f"{m_f_con * 9.2:.1f}")
+        st.metric(f"Desarmes Est. {t_fora}", f"{m_c_pro * 11.2:.1f}")
+
+    # --- PLAYER PROPS ESTIMATOR ---
     st.write("---")
-    st.subheader("💰 Gestão de Banca")
-    col_b, col_o, col_r = st.columns([1, 1, 2])
-    with col_b: banca = st.number_input("Banca Total (R$)", value=1000.0)
-    with col_o: odd_casa = st.number_input("Odd Bet365 (Over 1.5)", value=1.25)
-    with col_r:
-        odd_j = 1/o15 if o15 > 0 else 0
-        ev = (o15 * odd_casa) - 1
-        if ev > 0.05:
-            st.success(f"✅ VALOR! Sugestão: R$ {banca*0.05:.2f} (5%)")
-        else:
-            st.error(f"❌ BAIXO VALOR! Sugestão: R$ {banca*0.01:.2f} (1%) ou Fora")
+    st.subheader("👤 Estimador de Scout por Jogador (Beta)")
+    st.write("Selecione o perfil do jogador que você quer analisar para este jogo:")
+    
+    p_col1, p_col2, p_col3 = st.columns(3)
+    with p_col1:
+        perfil = st.selectbox("Perfil do Jogador", ["Volante Pegador", "Zagueiro Físico", "Lateral Ofensivo", "Atacante Alvo"])
+    with p_col2:
+        nivel = st.select_slider("Nível de Agressividade", options=["Baixo", "Médio", "Alto"])
+    
+    # Lógica de Estimativa Individual
+    base_faltas = 1.2 if nivel == "Baixo" else (2.1 if nivel == "Médio" else 3.4)
+    if perfil == "Volante Pegador":
+        est_f = base_faltas * (1 + m_c_con/2)
+        est_d = 2.5 * (1 + m_f_pro/2)
+    elif perfil == "Zagueiro Físico":
+        est_f = (base_faltas * 0.8) * (1 + m_c_con/2)
+        est_d = 1.8 * (1 + m_f_pro/2)
+    else:
+        est_f = 0.8; est_d = 1.0
+
+    with p_col3:
+        st.markdown(f"""
+        <div class='player-card'>
+        <b>Projeção p/ o Jogador:</b><br>
+        🔥 Faltas: <b>{est_f:.2f}</b><br>
+        🛡️ Desarmes: <b>{est_d:.2f}</b>
+        </div>
+        """, unsafe_allow_html=True)
 
     # --- REGISTRO ---
     st.write("---")
