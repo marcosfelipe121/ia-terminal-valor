@@ -3,15 +3,15 @@ import pandas as pd
 import numpy as np
 from scipy.stats import poisson
 
-st.set_page_config(page_title="IA ELITE PREDICTOR 2026", layout="wide", page_icon="⚽")
+st.set_page_config(page_title="IA OPERADOR ELITE", layout="wide", page_icon="💰")
 
-# Estilo Profissional
+# Estilo para facilitar a leitura rápida
 st.markdown("""
     <style>
     .main { background-color: #f8f9fa; }
-    .stMetric { background-color: #ffffff; border-radius: 10px; padding: 15px; border: 1px solid #d1d5db; box-shadow: 2px 2px 5px rgba(0,0,0,0.05); }
-    .status-box { padding: 20px; border-radius: 10px; margin-top: 10px; }
-    h1, h2, h3 { color: #0d47a1; font-family: 'Arial', sans-serif; }
+    .stNumberInput { border: 2px solid #0d47a1; border-radius: 5px; }
+    .stMetric { background-color: #ffffff; border-radius: 10px; padding: 15px; border: 1px solid #d1d5db; }
+    h3 { color: #0d47a1; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -32,13 +32,10 @@ def get_stats(df, time):
     return (gols_pro / 8 if len(recent) > 0 else 0), recent
 
 # --- INTERFACE ---
-st.title("🛡️ Terminal IA Elite Predictor")
+st.title("💰 Terminal IA: Comparador de Valor Real")
+st.write("Selecione o jogo e preencha a Odd da Bet365 abaixo para saber se vale a pena.")
 
-if st.sidebar.button("♻️ Forçar Atualização"):
-    st.cache_data.clear()
-    st.rerun()
-
-liga = st.sidebar.selectbox("🏆 Liga", ["Premier League (ING)", "La Liga (ESP)", "Serie A (ITA)", "Série A (BRA)"])
+liga = st.sidebar.selectbox("🏆 Escolha a Liga", ["Premier League (ING)", "La Liga (ESP)", "Serie A (ITA)", "Série A (BRA)"])
 url_map = {
     "Premier League (ING)": "https://www.football-data.co.uk/mmz4281/2526/E0.csv",
     "La Liga (ESP)": "https://www.football-data.co.uk/mmz4281/2526/SP1.csv",
@@ -54,84 +51,44 @@ if df is not None and not df.empty:
     with c1: t_casa = st.selectbox("🏠 Mandante", times)
     with c2: t_fora = st.selectbox("🏃 Visitante", times, index=min(1, len(times)-1))
 
-    m_casa, hist_casa = get_stats(df, t_casa)
-    m_fora, hist_fora = get_stats(df, t_fora)
+    m_casa, _ = get_stats(df, t_casa)
+    m_fora, _ = get_stats(df, t_fora)
 
-    # --- CONFIGURAÇÃO ---
-    st.write("---")
-    col_config1, col_config2 = st.columns(2)
-    with col_config1:
-        linha_g = st.selectbox("Linha de Gols (Over)", [0.5, 1.5, 2.5, 3.5], index=1)
-    with col_config2:
-        linha_c = st.selectbox("Linha de Cantos (Over)", [7.5, 8.5, 9.5, 10.5], index=2)
-
-    # Cálculos
-    p_c = p_e = p_f = prob_g_linha = prob_btts = 0
+    # --- CÁLCULO DE PROBABILIDADE ---
+    prob_over15 = 0
     for i in range(12):
         for j in range(12):
             prob = poisson.pmf(i, m_casa) * poisson.pmf(j, m_fora)
-            if i > j: p_c += prob
-            elif i == j: p_e += prob
-            else: p_f += prob
-            if (i+j) > linha_g: prob_g_linha += prob
-            if i > 0 and j > 0: prob_btts += prob
+            if (i+j) > 1.5: prob_over15 += prob
 
-    # --- MÉTRICAS ---
-    st.write("---")
-    st.subheader("🎯 Probabilidades IA")
-    res1, res2, res3, res4 = st.columns(4)
-    res1.metric(f"Vitória {t_casa}", f"{p_c:.1%}")
-    res2.metric("Empate", f"{p_e:.1%}")
-    res3.metric(f"Vitória {t_fora}", f"{p_f:.1%}")
-    res4.metric("Ambas Marcam", f"{prob_btts:.1%}")
+    st.divider()
 
-    # --- ANÁLISE DE VALOR DIDÁTICA ---
-    st.write("---")
-    st.subheader("💰 Onde investir? (Análise de Valor)")
+    # --- CAMPO DE AJUSTE MANUAL (O QUE VOCÊ QUERIA) ---
+    st.subheader("📝 Preencha os dados da Casa de Aposta")
     
-    col_v1, col_v2 = st.columns(2)
+    col_input1, col_input2 = st.columns(2)
+    
+    with col_input1:
+        odd_bet365 = st.number_input("Quanto a Bet365 está pagando no Over 1.5?", value=1.25, step=0.01)
+    
+    # Cálculo da Odd Justa baseada na IA
+    odd_justa = 1 / prob_over15 if prob_over15 > 0 else 0
+    
+    with col_input2:
+        st.write(f"📈 **Probabilidade da IA para 2+ gols:** {prob_over15:.1%}")
+        st.write(f"⚖️ **Odd Mínima Aceitável (Justa):** {odd_justa:.2f}")
 
-    # Análise de Gols
-    with col_v1:
-        st.markdown(f"#### Mercado: Over {linha_g} Gols")
-        odd_g = st.number_input(f"Odd da Casa p/ Over {linha_g}", value=1.40, key="odd_gols")
-        odd_justa_g = 1 / prob_g_linha if prob_g_linha > 0 else 0
-        ev_g = (prob_g_linha * odd_g) - 1
-        
-        st.write(f"📈 **Probabilidade IA:** {prob_g_linha:.1%}")
-        st.write(f"⚖️ **Odd Mínima Sugerida:** {odd_justa_g:.2f}")
-        
-        if ev_g > 0.10:
-            st.success(f"💎 **VALOR ENCONTRADO!**\nA casa está pagando muito bem. Valor esperado: +{ev_g:.1%}")
-        elif ev_g > 0:
-            st.warning(f"⚠️ **VALOR JUSTO.**\nAposta aceitável, mas com margem apertada (+{ev_g:.1%})")
-        else:
-            st.error(f"❌ **SEM VALOR.**\nA odd está muito baixa para o risco calculado. Não entre.")
+    # --- VEREDITO FINAL ---
+    st.divider()
+    if odd_bet365 > odd_justa:
+        st.success(f"💎 **VALOR ENCONTRADO!** A Odd de {odd_bet365} está acima do risco ({odd_justa:.2f}). **Pode apostar.**")
+    else:
+        st.error(f"❌ **NÃO APOSTE!** A Odd de {odd_bet365} está muito baixa. O risco não compensa o prêmio. A Odd mínima deveria ser {odd_justa:.2f}.")
 
-    # Análise de Ambas Marcam
-    with col_v2:
-        st.markdown("#### Mercado: Ambas Marcam")
-        odd_btts = st.number_input("Odd da Casa p/ BTTS (Sim)", value=1.80, key="odd_btts")
-        odd_justa_b = 1 / prob_btts if prob_btts > 0 else 0
-        ev_b = (prob_btts * odd_btts) - 1
-        
-        st.write(f"📈 **Probabilidade IA:** {prob_btts:.1%}")
-        st.write(f"⚖️ **Odd Mínima Sugerida:** {odd_justa_b:.2f}")
-        
-        if ev_b > 0.10:
-            st.success(f"💎 **VALOR ENCONTRADO!**\nExcelente oportunidade para BTTS. Valor: +{ev_b:.1%}")
-        elif ev_b > 0:
-            st.warning(f"⚠️ **VALOR JUSTO.**\nMargem de lucro pequena (+{ev_b:.1%})")
-        else:
-            st.error(f"❌ **SEM VALOR.**\nRisco maior que o prêmio oferecido.")
-
-    # --- HISTÓRICO ---
-    st.write("---")
-    st.subheader("📋 Registro de Jogos (Base de Dados)")
-    hist_total = pd.concat([hist_casa, hist_fora]).drop_duplicates().sort_values(by='Date', ascending=False)
-    hist_view = hist_total[['Date', 'HomeTeam', 'AwayTeam', 'FTHG', 'FTAG']].copy()
-    hist_view.columns = ['Data', 'Mandante', 'Visitante', 'Gols Casa', 'Gols Fora']
-    st.dataframe(hist_view, use_container_width=True, hide_index=True)
+    # --- PROJEÇÃO DE CANTOS ---
+    st.divider()
+    proj_c = (m_casa * 3.5) + (m_fora * 3.0)
+    st.metric("⛳ Projeção de Escanteios para o Jogo", f"{proj_c:.1f}")
 
 else:
-    st.warning("⚠️ Sincronizando dados... Clique em 'Forçar Atualização' se demorar.")
+    st.warning("Carregando base de dados 2026...")
