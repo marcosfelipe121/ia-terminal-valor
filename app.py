@@ -12,53 +12,39 @@ st.markdown("""
     .main { background-color: #f0f2f6; }
     .stMetric { background-color: #ffffff; border-radius: 10px; padding: 15px; border: 1px solid #d1d5db; box-shadow: 2px 2px 5px rgba(0,0,0,0.05); }
     h1, h2, h3 { color: #1e3a8a; font-family: 'Segoe UI', sans-serif; }
-    .player-row { background-color: #ffffff; padding: 10px; border-radius: 8px; border-bottom: 2px solid #e3f2fd; margin-bottom: 5px; font-size: 0.9em; }
+    .player-row { background-color: #ffffff; padding: 10px; border-radius: 8px; border-bottom: 2px solid #e3f2fd; margin-bottom: 5px; font-size: 0.85em; }
     .label-time { font-weight: bold; color: #1e3a8a; margin-bottom: 10px; text-transform: uppercase; border-left: 5px solid #d1d5db; padding-left: 10px; }
+    .warning-text { color: #856404; background-color: #fff3cd; padding: 5px; border-radius: 5px; font-size: 0.8em; margin-bottom: 10px; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- BANCO DE DADOS DE ELENCOS ATUALIZADOS (MARÇO/2026) ---
+# --- MASTER DATABASE 2026: CHAMPIONS, PREMIER & LA LIGA ---
 elencos = {
-    "Tottenham": {
-        "Defesa": ["Micky van de Ven", "Cristian Romero", "Radu Drăgușin", "Destiny Udogie"],
-        "Meio": ["Archie Gray", "Lucas Bergvall", "James Maddison", "Pape Matar Sarr"],
-        "Ataque": ["Dominic Solanke", "Brennan Johnson", "Wilson Odobert", "Dejan Kulusevski"]
-    },
-    "Crystal Palace": {
-        "Defesa": ["Marc Guéhi", "Maxence Lacroix", "Daniel Muñoz", "Tyrick Mitchell"],
-        "Meio": ["Adam Wharton", "Cheick Doucouré", "Daichi Kamada", "Jefferson Lerma"],
-        "Ataque": ["Eberechi Eze", "Jean-Philippe Mateta", "Ismaïla Sarr", "Eddie Nketiah"]
-    },
-    "Arsenal": {
-        "Defesa": ["William Saliba", "Gabriel Magalhães", "Jurriën Timber", "Riccardo Calafiori"],
-        "Meio": ["Declan Rice", "Martin Ødegaard", "Mikel Merino", "Kai Havertz"],
-        "Ataque": ["Bukayo Saka", "Gabriel Martinelli", "Leandro Trossard", "Raheem Sterling"]
-    },
-    "Man City": {
-        "Defesa": ["Joško Gvardiol", "Rúben Dias", "Manuel Akanji", "Rico Lewis"],
-        "Meio": ["Rodri", "Mateo Kovačić", "Phil Foden", "Ilkay Gündogan"],
-        "Ataque": ["Erling Haaland", "Savinho", "Jeremy Doku", "Bernardo Silva"]
-    },
-    "Liverpool": {
-        "Defesa": ["Virgil van Dijk", "Ibrahima Konaté", "Trent Alexander-Arnold", "Andy Robertson"],
-        "Meio": ["Alexis Mac Allister", "Dominik Szoboszlai", "Ryan Gravenberch", "Harvey Elliott"],
-        "Ataque": ["Mohamed Salah", "Luis Díaz", "Federico Chiesa", "Darwin Núñez"]
-    },
-    "Real Madrid": {
-        "Defesa": ["Antonio Rüdiger", "Éder Militão", "Dani Carvajal", "Ferland Mendy"],
-        "Meio": ["Jude Bellingham", "Federico Valverde", "Eduardo Camavinga", "Aurélien Tchouaméni"],
-        "Ataque": ["Vinícius Júnior", "Kylian Mbappé", "Rodrygo", "Arda Güler"]
-    },
-    "Palmeiras": {
-        "Defesa": ["Gustavo Gómez", "Murilo", "Agustín Giay", "Caio Paulista"],
-        "Meio": ["Aníbal Moreno", "Richard Ríos", "Raphael Veiga", "Maurício"],
-        "Ataque": ["Estêvão", "Flaco López", "Felipe Anderson", "Rony"]
-    },
-    "Flamengo": {
-        "Defesa": ["Léo Pereira", "Fabrício Bruno", "Alex Sandro", "Wesley"],
-        "Meio": ["Erick Pulgar", "Nicolás de la Cruz", "Gerson", "Carlos Alcaraz"],
-        "Ataque": ["Pedro", "Gonzalo Plata", "Everton Cebolinha", "Michael"]
-    }
+    # INGLATERRA
+    "Man City": {"Defesa": ["Gvardiol", "Rúben Dias", "Akanji", "Rico Lewis"], "Meio": ["Rodri", "Kovačić", "Foden", "Gündogan"], "Ataque": ["Haaland", "Savinho", "Doku", "Bernardo Silva"]},
+    "Arsenal": {"Defesa": ["Saliba", "Gabriel Mag.", "Timber", "Calafiori"], "Meio": ["Rice", "Ødegaard", "Merino", "Havertz"], "Ataque": ["Saka", "Martinelli", "Trossard", "Sterling"]},
+    "Liverpool": {"Defesa": ["Van Dijk", "Konaté", "Alexander-Arnold", "Robertson"], "Meio": ["Mac Allister", "Szoboszlai", "Gravenberch", "Jones"], "Ataque": ["Salah", "Luis Díaz", "Nketiah", "Darwin Núñez"]},
+    "Tottenham": {"Defesa": ["Van de Ven", "Romero", "Drăgușin", "Udogie"], "Meio": ["Archie Gray", "Bergvall", "Maddison", "Pape Sarr"], "Ataque": ["Solanke", "Brennan Johnson", "Odobert", "Kulusevski"]},
+    "Chelsea": {"Defesa": ["Colwill", "Fofana", "Cucurella", "James"], "Meio": ["Enzo F.", "Caicedo", "Lavia", "Palmer"], "Ataque": ["Jackson", "Nkunku", "Sancho", "Madueke"]},
+    "Man United": {"Defesa": ["De Ligt", "Lisandro Martínez", "Yoro", "Dalot"], "Meio": ["Mainoo", "Ugarte", "Bruno Fernandes", "Casemiro"], "Ataque": ["Højlund", "Rashford", "Garnacho", "Zirkzee"]},
+    "Aston Villa": {"Defesa": ["Pau Torres", "Konsa", "Maatsen", "Diego Carlos"], "Meio": ["Onana", "Tielemans", "McGinn", "Ramsey"], "Ataque": ["Ollie Watkins", "Leon Bailey", "Rogers", "Durán"]},
+    "Newcastle": {"Defesa": ["Botman", "Schär", "Hall", "Livramento"], "Meio": ["Bruno Guimarães", "Tonali", "Joelinton", "Willock"], "Ataque": ["Isak", "Gordon", "Barnes", "Almirón"]},
+    "Crystal Palace": {"Defesa": ["Guéhi", "Lacroix", "Muñoz", "Mitchell"], "Meio": ["Wharton", "Doucouré", "Kamada", "Lerma"], "Ataque": ["Eze", "Mateta", "Ismaïla Sarr", "Nketiah"]},
+
+    # ESPANHA
+    "Real Madrid": {"Defesa": ["Rüdiger", "Militão", "Carvajal", "Mendy"], "Meio": ["Bellingham", "Valverde", "Camavinga", "Tchouaméni"], "Ataque": ["Vinícius Jr", "Mbappé", "Rodrygo", "Endrick"]},
+    "Barcelona": {"Defesa": ["Koundé", "Cubarsí", "Araújo", "Balde"], "Meio": ["Pedri", "De Jong", "Gavi", "Dani Olmo"], "Ataque": ["Lewandowski", "Lamine Yamal", "Raphinha", "Ferran Torres"]},
+    "Atlético Madrid": {"Defesa": ["Le Normand", "Giménez", "Reinildo", "Llorente"], "Meio": ["Gallagher", "De Paul", "Koke", "Barrios"], "Ataque": ["Julián Alvarez", "Griezmann", "Sorloth", "Correa"]},
+    "Girona": {"Defesa": ["Blind", "David López", "Miguel G.", "Francés"], "Meio": ["Yangel Herrera", "Romeu", "Iván Martín", "Van de Beek"], "Ataque": ["Danjuma", "Miovski", "Tsygankov", "Asprilla"]},
+    "Real Sociedad": {"Defesa": ["Aguerd", "Zubeldia", "Sergio Gómez", "Aramburu"], "Meio": ["Zubimendi", "Brais Méndez", "Sučić", "Turrientes"], "Ataque": ["Oyarzabal", "Becker", "Kubo", "Oskarsson"]},
+
+    # CHAMPIONS (OUTROS GIGANTES)
+    "Bayern Munich": {"Defesa": ["Kim Min-jae", "Upamecano", "Davies", "Boey"], "Meio": ["Kimmich", "Pavlović", "Musiala", "Palhinha"], "Ataque": ["Harry Kane", "Olise", "Sané", "Gnabry"]},
+    "Leverkusen": {"Defesa": ["Tapsoba", "Tah", "Hincapié", "Frimpong"], "Meio": ["Xhaka", "Andrich", "Wirtz", "García"], "Ataque": ["Boniface", "Schick", "Adli", "Tella"]},
+    "PSG": {"Defesa": ["Marquinhos", "Pacho", "Nuno Mendes", "Hakimi"], "Meio": ["Vitinha", "João Neves", "Zaïre-Emery", "Fabian Ruiz"], "Ataque": ["Barcola", "Dembélé", "Kolo Muani", "Gonçalo Ramos"]},
+    "Inter": {"Defesa": ["Bastoni", "Pavard", "Acerbi", "Dimarco"], "Meio": ["Barella", "Calhanoglu", "Mkhitaryan", "Frattesi"], "Ataque": ["Lautaro Martínez", "Thuram", "Taremi", "Arnautovic"]},
+    "Juventus": {"Defesa": ["Bremer", "Gatti", "Kalulu", "Cambiaso"], "Meio": ["Douglas Luiz", "Locatelli", "Koopmeiners", "Thuram"], "Ataque": ["Vlahovic", "Yildiz", "Nico González", "Conceição"]},
+    "Borussia Dortmund": {"Defesa": ["Schlotterbeck", "Anton", "Couto", "Ryerson"], "Meio": ["Emre Can", "Gross", "Brandt", "Sabitzer"], "Ataque": ["Guirassy", "Adeyemi", "Beier", "Malen"]}
 }
 
 @st.cache_data(ttl=3600)
@@ -80,9 +66,9 @@ def get_stats(df, time):
     return (g_pro / 8), (g_con / 8), recent
 
 # --- INTERFACE ---
-st.title("🛡️ Terminal IA Elite: Scouts Atualizados 2026")
+st.title("🛡️ Terminal IA Elite: Pro Predictor v21")
 
-liga = st.sidebar.selectbox("🏆 Liga", ["Premier League (ING)", "La Liga (ESP)", "Serie A (ITA)", "Série A (BRA)"])
+liga = st.sidebar.selectbox("🏆 Competição", ["Premier League (ING)", "La Liga (ESP)", "Serie A (ITA)", "Série A (BRA)"])
 url_map = {
     "Premier League (ING)": "https://www.football-data.co.uk/mmz4281/2526/E0.csv",
     "La Liga (ESP)": "https://www.football-data.co.uk/mmz4281/2526/SP1.csv",
@@ -101,59 +87,58 @@ if df is not None and not df.empty:
     m_c_pro, m_c_con, hist_casa = get_stats(df, t_casa)
     m_f_pro, m_f_con, hist_fora = get_stats(df, t_fora)
 
-    # --- MÉTRICAS DE VALOR ---
+    # --- MÉTRICAS ---
     st.write("---")
     o15_p = 0
     for i in range(10):
         for j in range(10):
             if (i+j) > 1.5: o15_p += poisson.pmf(i, m_c_pro) * poisson.pmf(j, m_f_pro)
     
-    m1, m2, m3 = st.columns(3)
+    m1, m2, m3, m4 = st.columns(4)
     m1.metric("Prob. Over 1.5", f"{o15_p:.1%}")
     m2.metric("Proj. Cantos", f"{(m_c_pro*3.8 + m_f_pro*3.2):.1f}")
-    m3.metric("Intensidade do Jogo", "ALTA" if (m_c_con + m_f_con) > 2.5 else "MÉDIA")
+    m3.metric("Ambas Marcam", f"{(0.65 if m_c_pro > 1 and m_f_pro > 1 else 0.42):.0%}")
+    m4.metric("Intensidade", "ALTA" if (m_c_con + m_f_con) > 2.3 else "MÉDIA")
 
-    # --- MONITORAMENTO PANORÂMICO 2026 ---
+    # --- MONITORAMENTO PANORÂMICO ---
     st.write("---")
-    st.subheader("🕵️ Scout por Jogador (Elenco Atualizado 2026)")
+    st.subheader("🕵️ Scout por Jogador (Database 2026)")
     setor = st.radio("Escolha o Setor:", ["Defesa", "Meio", "Ataque"], horizontal=True)
     
-    col_a, col_b = st.columns(2)
+    col_pa, col_pb = st.columns(2)
 
     def render_players(time, setor_esc, g_sofridos, g_adv_pro):
         st.markdown(f"<div class='label-time'>{time}</div>", unsafe_allow_html=True)
-        # Busca no banco 2026, se não achar usa placeholder
-        jogadores = elencos.get(time, {}).get(setor_esc, [f"Jogador {setor_esc} 1", f"Jogador {setor_esc} 2"])
-        
-        for j in jogadores:
-            # Faltas: Mais agressivo se o time sofre muitos gols
-            # Desarmes: Mais agressivo se o adversário ataca muito
-            f_est = (g_sofridos * 2.3) if setor_esc == "Defesa" else (g_sofridos * 1.6 if setor_esc == "Meio" else 0.7)
-            d_est = (g_adv_pro * 2.6) if setor_esc == "Defesa" else (g_adv_pro * 1.9 if setor_esc == "Meio" else 0.5)
+        if time in elencos:
+            jogadores = elencos[time].get(setor_esc, [])
+        else:
+            st.markdown("<div class='warning-text'>⚠️ Time fora da lista VIP.</div>", unsafe_allow_html=True)
+            jogadores = [f"Jogador {setor_esc} 1", f"Jogador {setor_esc} 2"]
             
-            st.markdown(f"""
-                <div class='player-row'>
-                    <b>{j}</b><br>
-                    🔥 Est. Faltas: {f_est:.1f} | 🛡️ Est. Desarmes: {d_est:.1f}
-                </div>
-            """, unsafe_allow_html=True)
+        for j in jogadores:
+            f_est = (g_sofridos * 2.2) if setor_esc == "Defesa" else (g_sofridos * 1.5 if setor_esc == "Meio" else 0.6)
+            d_est = (g_adv_pro * 2.5) if setor_esc == "Defesa" else (g_adv_pro * 1.8 if setor_esc == "Meio" else 0.4)
+            st.markdown(f"<div class='player-row'><b>{j}</b><br>🔥 Faltas: {f_est:.1f} | 🛡️ Desarmes: {d_est:.1f}</div>", unsafe_allow_html=True)
 
-    with col_a: render_players(t_casa, setor, m_c_con, m_f_pro)
-    with col_b: render_players(t_fora, setor, m_f_con, m_c_pro)
+    with col_pa: render_players(t_casa, setor, m_c_con, m_f_pro)
+    with col_pb: render_players(t_fora, setor, m_f_con, m_c_pro)
 
-    # --- GESTÃO ---
+    # --- GESTÃO DE BANCA ---
     st.write("---")
     st.subheader("💰 Gestão de Banca")
-    b1, b2 = st.columns(2)
-    with b1: banca = st.number_input("Sua Banca (R$)", value=1000.0)
-    with b2: 
-        st.write("Sugestão de Entrada (Unidade 3%):")
-        st.success(f"R$ {banca*0.03:.2f}")
+    gb1, gb2, gb3 = st.columns(3)
+    with gb1: banca = st.number_input("Banca Total (R$)", value=1000.0)
+    with gb2: odd_bt = st.number_input("Odd Bet365", value=1.25)
+    with gb3:
+        p_stake = 0.05 if o15_p > 0.8 else 0.02
+        st.success(f"📈 Sugestão: R$ {banca * p_stake:.2f} ({(p_stake*100):.0f}%)")
 
     # --- HISTÓRICO ---
-    st.subheader("📋 Histórico Recente")
+    st.write("---")
+    st.subheader("📋 Últimos Resultados")
     hist_total = pd.concat([hist_casa, hist_fora]).drop_duplicates().sort_values(by='Date', ascending=False)
-    st.dataframe(hist_total[['Date', 'HomeTeam', 'AwayTeam', 'FTHG', 'FTAG']], use_container_width=True, hide_index=True)
+    hist_view = hist_total[['Date', 'HomeTeam', 'AwayTeam', 'FTHG', 'FTAG']].copy()
+    hist_view.columns = ['Data', 'Mandante', 'Visitante', 'Gols Casa', 'Gols Fora']
+    st.dataframe(hist_view, use_container_width=True, hide_index=True)
 
-else:
-    st.error("Erro ao sincronizar dados da temporada 2026.")
+else: st.error("Erro ao carregar dados.")
