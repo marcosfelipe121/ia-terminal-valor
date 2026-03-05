@@ -2,19 +2,17 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 from scipy.stats import poisson
-from datetime import datetime
 
-# Configuração de Layout - Estilo Profissional Claro
-st.set_page_config(page_title="IA ELITE 2026", layout="wide", page_icon="📈")
+# Configuração de Layout
+st.set_page_config(page_title="IA ELITE PREDICTOR 2026", layout="wide", page_icon="⚽")
 
-# CSS para Interface Elegante e Legível
+# Design Profissional (Clean White)
 st.markdown("""
     <style>
-    .main { background-color: #f8f9fa; color: #1e1e1e; }
-    .stMetric { background-color: #ffffff; border-radius: 12px; padding: 20px; border: 1px solid #e0e0e0; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-    div[data-testid="stExpander"] { background-color: #ffffff; border: 1px solid #e0e0e0; border-radius: 12px; }
-    .stButton>button { background-color: #007bff; color: white; font-weight: bold; border-radius: 8px; height: 3em; }
-    h1, h2, h3 { color: #0d47a1; }
+    .main { background-color: #f0f2f6; }
+    .stMetric { background-color: #ffffff; border-radius: 10px; padding: 15px; border: 1px solid #d1d5db; box-shadow: 2px 2px 5px rgba(0,0,0,0.05); }
+    .stDataFrame { background-color: #ffffff; border-radius: 10px; }
+    h1, h2, h3 { color: #1e3a8a; font-family: 'Segoe UI', sans-serif; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -22,33 +20,24 @@ st.markdown("""
 def load_data(url):
     try:
         df = pd.read_csv(url)
-        df['Date'] = pd.to_datetime(df['Date'], dayfirst=True, errors='coerce')
+        df['Date'] = pd.to_datetime(df['Date'], dayfirst=True)
         return df.dropna(subset=['HomeTeam', 'AwayTeam', 'FTHG', 'FTAG'])
     except: return None
 
-# --- LÓGICA DE PREVISÃO ---
-def analise_pro_2026(df, casa, fora):
-    # Médias dos últimos 10 jogos (Fase Atual 2026)
-    df_recent = df.tail(150) # Pega os jogos mais frescos da temporada
-    avg_gols_liga = df_recent['FTHG'].mean() + df_recent['FTAG'].mean()
-    
-    # Força Ofensiva e Defensiva
-    casa_gols_pro = df[df['HomeTeam'] == casa]['FTHG'].tail(8).mean()
-    casa_gols_contra = df[df['HomeTeam'] == casa]['FTAG'].tail(8).mean()
-    fora_gols_pro = df[df['AwayTeam'] == fora]['FTAG'].tail(8).mean()
-    fora_gols_contra = df[df['AwayTeam'] == fora]['FTHG'].tail(8).mean()
-
-    # Lambda (Poisson)
-    l_casa = (casa_gols_pro + fora_gols_contra) / 2
-    l_fora = (fora_gols_pro + casa_gols_contra) / 2
-    
-    return l_casa, l_fora
+# --- ENGINE ---
+def get_stats(df, time):
+    # Puxa os últimos 8 jogos do time (como mandante ou visitante)
+    recent = df[(df['HomeTeam'] == time) | (df['AwayTeam'] == time)].tail(8)
+    gols_pro = 0
+    for _, row in recent.iterrows():
+        if row['HomeTeam'] == time: gols_pro += row['FTHG']
+        else: gols_pro += row['FTAG']
+    return gols_pro / 8, recent
 
 # --- INTERFACE ---
-st.title("📈 IA Elite Predictor: Terminal 2026")
-st.subheader(f"📅 Data de Operação: {datetime.now().strftime('%d/%m/%Y')}")
+st.title("🛡️ Terminal IA Elite Predictor")
+st.caption(f"Status do Servidor: Conectado | Dados: Temporada 2025/2026")
 
-# Seletor de Ligas - Conectado com as bases reais 25/26
 liga = st.sidebar.selectbox("🏆 Selecione a Liga", ["Premier League (ING)", "La Liga (ESP)", "Serie A (ITA)", "Série A (BRA)"])
 url_map = {
     "Premier League (ING)": "https://www.football-data.co.uk/mmz4281/2526/E0.csv",
@@ -61,73 +50,57 @@ df = load_data(url_map[liga])
 
 if df is not None:
     times = sorted(df['HomeTeam'].unique())
-    
-    # Seleção de Confronto
     c1, c2 = st.columns(2)
     with c1: t_casa = st.selectbox("🏠 Time Mandante", times)
     with c2: t_fora = st.selectbox("🏃 Time Visitante", times, index=min(1, len(times)-1))
 
-    # Processamento
-    l_c, l_f = analise_pro_2026(df, t_casa, t_fora)
+    # Cálculos Médias e Histórico
+    m_casa, hist_casa = get_stats(df, t_casa)
+    m_fora, hist_fora = get_stats(df, t_fora)
     
     # Probabilidades Poisson
     p_c = p_e = p_f = o25 = 0
     for i in range(10):
         for j in range(10):
-            prob = poisson.pmf(i, l_c) * poisson.pmf(j, l_f)
+            prob = poisson.pmf(i, m_casa) * poisson.pmf(j, m_fora)
             if i > j: p_c += prob
             elif i == j: p_e += prob
             else: p_f += prob
             if (i+j) > 2.5: o25 += prob
 
-    # --- DASHBOARD VISUAL ---
-    st.write("### 📊 Probabilidades Calculadas (IA)")
-    col_a, col_b, col_c, col_d = st.columns(4)
-    col_a.metric(f"Vitória {t_casa}", f"{p_c:.1%}")
-    col_b.metric("Empate", f"{p_e:.1%}")
-    col_c.metric(f"Vitória {t_fora}", f"{p_f:.1%}")
-    col_d.metric("Over 2.5 Gols", f"{o25:.1%}")
+    # --- DASHBOARD ---
+    st.write("---")
+    st.subheader("🎯 Probabilidades e Projeções")
+    d1, d2, d3, d4 = st.columns(4)
+    d1.metric(f"Vitória {t_casa}", f"{p_c:.1%}")
+    d2.metric("Empate", f"{p_e:.1%}")
+    d3.metric(f"Vitória {t_fora}", f"{p_f:.1%}")
+    d4.metric("Over 2.5 Gols", f"{o25:.1%}")
 
-    st.markdown("---")
-    
-    # --- ÁREA DE ODDS E VALOR (EV+) ---
-    st.write("### 💰 Filtro de Valor e Gestão")
-    v1, v2, v3 = st.columns(3)
+    # --- VALOR ESPERADO (ENTRADA DE ODDS) ---
+    st.write("---")
+    st.subheader("💰 Análise de Valor (EV+)")
+    v1, v2 = st.columns(2)
     
     with v1:
-        odd_c = st.number_input(f"Odd {t_casa}", value=2.0)
+        odd_c = st.number_input(f"Odd para Vitória do {t_casa}", value=2.0)
         ev_c = (p_c * odd_c) - 1
-        st.write(f"**EV {t_casa}:** {ev_c:+.2f}")
-        if ev_c > 0: st.success("💎 VALOR ENCONTRADO")
-        else: st.error("Sem Valor")
+        if ev_c > 0: st.success(f"💎 VALOR EM {t_casa.upper()}: +{ev_c:.1%}")
+        else: st.error(f"Sem Valor para {t_casa}")
 
     with v2:
-        odd_o = st.number_input("Odd Over 2.5", value=1.95)
+        odd_o = st.number_input(f"Odd para Over 2.5 Gols", value=1.90)
         ev_o = (o25 * odd_o) - 1
-        st.write(f"**EV Over:** {ev_o:+.2f}")
-        if ev_o > 0: st.success("💎 VALOR ENCONTRADO")
-        else: st.error("Sem Valor")
+        if ev_o > 0: st.success(f"💎 VALOR EM OVER 2.5: +{ev_o:.1%}")
+        else: st.error("Sem Valor para Over 2.5")
 
-    with v3:
-        # Escanteios Estimados por Pressão Ofensiva (Regra 2026)
-        proj_cantos = (l_c * 3.8) + (l_f * 3.2)
-        st.metric("⛳ Projeção de Escanteios", f"{proj_cantos:.1f}")
-        st.caption(f"Prob. Over 9.5: **{min(99.0, (proj_cantos*9.5)):.1%}%**")
-
-    # --- PLACAR E MINUTAGEM ---
-    st.markdown("---")
-    st.write("### ⏱️ Mapa de Calor de Gols (Probabilidade por Tempo)")
+    # --- MAPA DE CALOR E REGISTRO ---
+    st.write("---")
+    col_map, col_data = st.columns([1, 2])
     
-    # Simulação de minutagem baseada em gols médios
-    m1, m2 = st.columns(2)
-    with m1:
-        st.write("**⚽ Primeiro Tempo (HT)**")
-        st.progress(int(o25 * 35)) # Estimativa visual
-        st.write(f"Chance de Gol no HT: **{(o25 * 0.7):.1%}**")
-    with m2:
-        st.write("**⚽ Segundo Tempo (FT)**")
-        st.progress(int(o25 * 65))
-        st.write(f"Chance de Gol no FT: **{(o25 * 0.9):.1%}**")
-
-else:
-    st.error("Não foi possível carregar os dados de 2026. Verifique se a temporada já iniciou.")
+    with col_map:
+        st.subheader("⏱️ Tendência Temporal")
+        st.write("Chance de Gols no 1º Tempo")
+        st.progress(int((o25 * 0.4) * 100))
+        st.write("Chance de Gols no 2º Tempo")
+        st.progress(int((o25 * 0.6) * 1
